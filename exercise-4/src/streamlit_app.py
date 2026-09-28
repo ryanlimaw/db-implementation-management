@@ -17,7 +17,10 @@ st.write("Visualização dos tempos de volta armazenados no MongoDB (banco openf
 try:
     anos = services.listar_anos()
 except PyMongoError as erro:
-    st.error(f"Não foi possível conectar ao MongoDB: {erro}")
+    st.error("Não foi possível conectar ao MongoDB. Verifique se o servidor está rodando "
+             "e o MONGO_URI em .streamlit/secrets.toml.")
+    with st.expander("Detalhes técnicos"):
+        st.code(str(erro), language=None)
     st.stop()
 
 if not anos:

@@ -2,6 +2,9 @@
 import logging
 import sys
 
+import requests
+from pymongo.errors import PyMongoError
+
 from carga import processar_e_gravar_dados
 from db import conectar_mongodb
 from extracao import buscar_dados_mercado
@@ -21,9 +24,16 @@ def main():
 
 
 if __name__ == "__main__":
+    # Em qualquer falha o script para com código != 0 (o cron consegue detectar).
     try:
         main()
+    except requests.exceptions.RequestException as erro:
+        log.error("Falha ao acessar a API do Cartola: %s", erro)
+        sys.exit(1)
+    except PyMongoError as erro:
+        log.error("Falha no MongoDB: %s", erro)
+        sys.exit(1)
     except Exception:
-        # Registra o erro completo e encerra com código != 0 (o cron consegue detectar a falha).
-        log.exception("Falha na execução do ETL.")
+        # Erro inesperado: registra o traceback completo para investigar.
+        log.exception("Falha inesperada na execução do ETL.")
         sys.exit(1)

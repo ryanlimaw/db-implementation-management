@@ -75,6 +75,10 @@ def main():
             sys.exit(1)
 
         print(f"  {len(data)} registro(s) recebido(s).")
+        if not data and endpoint == "sessions":
+            # Sem a sessão não faz sentido buscar pilotos e voltas
+            print(f"ERRO: session_key={args.session_key} não encontrada na API OpenF1.")
+            sys.exit(1)
         if not data:
             # Sessão sem dados nesse endpoint: não é erro, só avisa
             print("  Nada para salvar.")
