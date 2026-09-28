@@ -171,7 +171,7 @@ também respondeu 401. Por isso a fonte usada foi a API do Ministério da Saúde
 
 ### 3. Carga completa – TESTADO E FUNCIONANDO
 
-Saída real (resumida, sem as linhas de progresso de cada página):
+Saída real (resumida, sem as linhas de progresso de cada página). Esta saída é da primeira versão do `main.py`, que conectava ao MongoDB só depois do download. A versão atual conecta primeiro (veja o teste 7).
 
 ```
 1) Baixando UBS de https://apidadosabertos.saude.gov.br/assistencia-a-saude/unidade-basicas-de-saude
@@ -263,3 +263,15 @@ A coleção continuou com 44682 documentos, sem duplicar.
 ### 6. MongoDB Atlas – NÃO FOI POSSÍVEL TESTAR
 
 Só testei com o MongoDB local. Com Atlas deveria bastar trocar o `MONGO_URI`, mas isso não foi testado.
+
+### 7. Falhas e regressão após a auditoria – TESTADO E FUNCIONANDO
+
+Na auditoria, a conexão com o MongoDB passou a ser o primeiro passo. Antes, com o Mongo fora do ar, o script baixava a base inteira (cerca de 30 s) e só então falhava. Os erros esperados agora mostram uma mensagem curta em vez de traceback:
+
+| Situação | Mensagem | Código de saída |
+|---|---|---|
+| `MONGO_URI=mongodb://localhost:27999` | `ERRO no MongoDB: localhost:27999: [WinError 10061] ...` (logo no passo 1) | 1 |
+| `UBS_API_URL=https://apidadosabertos.invalid/x` | 3 tentativas com o motivo e `ERRO: Não foi possível baixar a página offset=0` | 1 |
+| API sem registros (simulado substituindo `baixar_ubs` por uma lista vazia) | `ERRO: a API não retornou nenhum registro de UBS` | 1 |
+
+Depois disso rodei a carga completa de novo no banco `ubs_geo`: `46848 registros baixados`, `44682 válidos / 2166 descartados`, `upsert: 0 novos, 44682 já existiam`, índice `geometry_2dsphere` presente e 37 UBS no raio de 2 km da Praça da Sé. São os mesmos números de antes, sem duplicar.

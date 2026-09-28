@@ -37,6 +37,8 @@ Depois é só copiar o `.env.example` do exercício para `.env`, ajustar a `MONG
 
 Ordem sugerida: rodar o **exercise-1** antes do **exercise-4**, porque o app só lê o que o coletor gravou.
 
+No Windows, clone o repositório num caminho curto (ex.: `C:\projetos\`). O Streamlit 1.64 tem arquivos com caminho interno muito longo, e numa pasta muito funda o `pip install` do exercício 4 falha com `WinError 206`.
+
 ## Observações importantes
 
 - **Sessão 9159:** o enunciado do exercício 1 diz que a sessão 9159 é o GP da Itália de 2023. A API OpenF1 retorna 9159 como *Singapore – Practice 2*. A corrida de Monza em 2023 é a **9157**. O coletor continua com 9159 como padrão, como pede o enunciado, mas também coletei a 9157, que é a sessão usada no estudo de caso do exercício 4.

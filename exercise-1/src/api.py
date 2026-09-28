@@ -7,6 +7,14 @@ import requests
 import config
 
 
+def _sem_resultados(response) -> bool:
+    """True se o 404 for o 'No results found.' da OpenF1 (e não um endpoint errado)."""
+    try:
+        return response.json().get("detail") == "No results found."
+    except ValueError:
+        return False
+
+
 def fetch_data(endpoint: str, params: dict) -> list:
     """Faz um GET em {OPENF1_BASE_URL}/{endpoint} e retorna a lista de registros.
 
@@ -24,6 +32,11 @@ def fetch_data(endpoint: str, params: dict) -> list:
             print(f"  API retornou 429 (limite de requisições). Tentando de novo em {espera}s...")
             time.sleep(espera)
             continue
+
+        # A OpenF1 responde 404 com {"detail": "No results found."} quando a
+        # consulta não tem resultados. Isso não é erro: significa lista vazia.
+        if response.status_code == 404 and _sem_resultados(response):
+            return []
 
         response.raise_for_status()
         break

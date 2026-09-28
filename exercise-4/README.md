@@ -92,6 +92,8 @@ streamlit run src/streamlit_app.py
 
 O app abre em `http://localhost:8501`.
 
+> **Windows:** o pacote do Streamlit 1.64 tem arquivos com caminho interno muito longo. Se o projeto estiver numa pasta muito funda (ex.: dentro de `OneDrive\Documentos\Faculdade\...`), o `pip install` pode falhar com `WinError 206` (nome de arquivo muito grande). Nesse caso, clone o projeto num caminho mais curto (ex.: `C:\projetos\`) ou [ative o suporte a caminhos longos](https://learn.microsoft.com/windows/win32/fileio/maximum-file-path-limitation).
+
 ## Como usar (estudo de caso)
 
 1. Na barra lateral, escolha o ano **2023**.
@@ -133,7 +135,34 @@ aparece e pode ser aberta (Singapore / Practice 2). Nenhuma exceção.
 `streamlit run src/streamlit_app.py --server.headless true --server.port 8599`:
 `/_stcore/health` respondeu `ok` e `/` respondeu HTTP 200. O processo foi encerrado depois.
 
-**4. Uso visual no navegador — NÃO FOI POSSÍVEL TESTAR**
+**4. Uso no Google Chrome (DevTools: Console, Network e Issues) — TESTADO E FUNCIONANDO**
 
-Não abrimos o app em um navegador de verdade nesta verificação; a aparência do gráfico (cores,
-hover, zoom) não foi conferida visualmente, só a estrutura via AppTest.
+O app rodou com `streamlit run src/streamlit_app.py` e foi aberto no Google Chrome, automatizado com Playwright. O script registrou o console, os erros de JavaScript, as requisições de rede e o painel *Issues* do DevTools (via protocolo do Chrome), passando por: carregamento inicial → Leclerc + Sainz → "Ver tabela de dados" → hover no gráfico → desmarcar "Mostrar só corridas" → sessão 9159 → "Select all" (20 pilotos no gráfico) → voltar para Monza → recarregar a página (F5).
+
+- Console: nenhuma mensagem de erro ou warning. Nenhum erro de JavaScript.
+- Rede: 140 respostas, todas HTTP 200. Nenhum 4xx/5xx, nenhum asset ou fonte quebrada, nenhuma requisição pendente.
+- Tela: nenhum traceback, nenhum loading infinito. Os screenshots conferem com o estudo de caso: dois tons de azul para Leclerc e Sainz, picos nas voltas 20 e 21.
+- Não conferido: zoom e pan do gráfico (ferramentas do Plotly).
+
+**Avisos que aparecem no painel *Issues* do Chrome (não são erros do app):**
+
+| Aviso | Qtde | Origem | Precisa corrigir? |
+|---|---|---|---|
+| `PerformanceIssue: DocumentCookie` | 58 | JS interno do Streamlit (`index.js`, `loglevel.js`, `getColors.js`) lendo `document.cookie` | Não. É do Streamlit, fora do nosso código. |
+| `FormLabelHasNeitherForNorNestedInput` ("No label associated with a form field") | 31 | `<label>` gerados pelo Streamlit (`stWidgetLabel` e `stMetricLabel`) para "Ano", "Sessão", "Pilotos" e as métricas | Não. Nosso código só passa o texto do rótulo. |
+
+Na aba *Network* aparecem também chamadas para `webhooks.fivetran.com` e `data.streamlit.io`. É a coleta de estatísticas de uso do próprio Streamlit (o terminal avisa: *"Collecting usage statistics. To deactivate, set browser.gatherUsageStats to false"*). Não é erro. Se quiser desligar, rode com `--browser.gatherUsageStats false`.
+
+**5. Falhas e estados vazios no navegador — TESTADO E FUNCIONANDO**
+
+Cada caso foi aberto no Chrome com uma configuração diferente, pelas variáveis `MONGO_URI` e `MONGO_DB_NAME`, sem `secrets.toml`:
+
+| Situação | O que o usuário vê |
+|---|---|
+| MongoDB desligado | "Não foi possível conectar ao MongoDB. Verifique se o servidor está rodando e o MONGO_URI em .streamlit/secrets.toml.", com o erro técnico dentro de "Detalhes técnicos" |
+| MongoDB cai com o app aberto (servidor derrubado depois de escolher um piloto) | a mesma mensagem acima na próxima interação |
+| Banco vazio | "Nenhuma sessão no banco. Rode antes o coletor do exercise-1." |
+| Sessão sem pilotos | "Não há pilotos salvos para essa sessão." |
+| Pilotos sem voltas | "Não há voltas salvas para os pilotos selecionados." |
+
+Em nenhum caso apareceu traceback. Antes da auditoria, a mensagem de MongoDB desligado mostrava o erro inteiro do driver (`TopologyDescription`...) direto na tela. Agora esse texto fica dentro de "Detalhes técnicos".

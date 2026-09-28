@@ -83,7 +83,7 @@ Exemplo de agendamento no cron (a cada hora):
 0 * * * * cd /caminho/exercise-2 && ../.venv/bin/python src/main.py >> etl.log 2>&1
 ```
 
-O `.env` é procurado na pasta `exercise-2/`, então o script funciona mesmo quando o cron roda de outro diretório. Em caso de erro (API fora, HTTP 4xx/5xx, MongoDB indisponível) o traceback vai para o log e o processo sai com código 1.
+O `.env` é procurado na pasta `exercise-2/`, então o script funciona mesmo quando o cron roda de outro diretório. Em caso de erro esperado (API fora, HTTP 4xx/5xx, timeout, MongoDB indisponível) o log mostra uma linha `[ERROR]` explicando o motivo, e o processo sai com código 1. O traceback completo só aparece em erro inesperado.
 
 ## Estratégia de gravação por coleção
 
@@ -132,9 +132,11 @@ Ambiente: Windows 11, Python 3.12.10, MongoDB 8.0.4 portable local (`mongodb://l
 | `atletas_rodada_atual` | 779 (779 `atleta_id` distintos, um único `timestamp_coleta` = o da 2ª execução) |
 | `mercado_rodada_atual` | 1 (só o da 2ª execução) |
 
-**TESTADO E FUNCIONANDO - URL inválida** (`CARTOLA_API_URL=https://api.cartola.globo.com/rota-inexistente`): `requests.exceptions.HTTPError: 404 Client Error`, log com `[ERROR] Falha na execução do ETL.`, código de saída 1, dados do banco preservados.
+**TESTADO E FUNCIONANDO - URL inválida** (`CARTOLA_API_URL=https://api.cartola.globo.com/rota-inexistente`): log `[ERROR] Falha ao acessar a API do Cartola: 404 Client Error: Not Found for url: ...`, código de saída 1, dados do banco preservados.
 
-**TESTADO E FUNCIONANDO - MongoDB indisponível** (`MONGO_URI=mongodb://localhost:27999`): `ServerSelectionTimeoutError` (conexão recusada, `serverSelectionTimeoutMS=5000`), log com `[ERROR]`, código de saída 1.
+**TESTADO E FUNCIONANDO - MongoDB indisponível** (`MONGO_URI=mongodb://localhost:27999`): log `[ERROR] Falha no MongoDB: localhost:27999: [WinError 10061] ...` (conexão recusada), código de saída 1.
+
+**TESTADO E FUNCIONANDO - sem internet e timeout** (`CARTOLA_API_URL=https://api.cartola.invalid/x` e `CARTOLA_API_URL=http://10.255.255.1/x REQUEST_TIMEOUT=2`): log `[ERROR] Falha ao acessar a API do Cartola: ...` com o motivo (`NameResolutionError` / `ConnectTimeoutError`), código de saída 1.
 
 **TESTADO E FUNCIONANDO - dados vazios** (chamando `processar_e_gravar_dados` direto com `clubes={}`, `atletas=[]`, status vazio, num banco temporário apagado depois): sem exceção, só avisos no log e as coleções ficaram com 0 documentos.
 

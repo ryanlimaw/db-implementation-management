@@ -81,6 +81,7 @@ Se o documento não existe, ele é inserido (`upserted_id` preenchido); se já e
 ## Tratamento de erros
 
 - **API:** toda requisição tem `timeout` e chama `response.raise_for_status()`. Timeout, erro HTTP e erro de conexão são capturados e mostram uma mensagem clara.
+- **Consulta sem resultados:** a OpenF1 não devolve lista vazia quando não encontra nada. Ela responde `404` com `{"detail": "No results found."}`. O `fetch_data` trata esse caso como lista vazia. Se a própria sessão não existir, o script avisa `session_key=... não encontrada na API OpenF1` e para. Se só faltarem pilotos ou voltas, ele avisa "Nada para salvar" e continua.
 - **Limite de requisições (HTTP 429):** a OpenF1 pode limitar requisições. Nesse caso o script espera alguns segundos e tenta de novo (até `MAX_RETRIES` vezes). Nos nossos testes não recebemos 429.
 - **MongoDB:** a conexão usa `serverSelectionTimeoutMS` e um `ping`; erros do `pymongo` (`ServerSelectionTimeoutError`, `PyMongoError`) na conexão ou na gravação são capturados.
 - Em qualquer erro o script **não segue em silêncio**: imprime a mensagem e sai com código `1`.
@@ -169,6 +170,19 @@ ERRO HTTP ao buscar /sessions: 400 Client Error: Bad Request for url: https://ap
 ```
 
 Código de saída: `1`.
+
+### 4b. session_key inexistente — TESTADO E FUNCIONANDO
+
+```bash
+python src/f1_data_collector.py --session-key 1
+```
+
+```
+  0 registro(s) recebido(s).
+ERRO: session_key=1 não encontrada na API OpenF1.
+```
+
+Código de saída: `1`. Antes dessa correção, o script mostrava `ERRO HTTP ... 404 Not Found`, o que parecia um problema de URL. Também conferi que `fetch_data("laps", {"session_key": 9159, "driver_number": 999})` retorna `[]` em vez de erro.
 
 ### 5. Retry em HTTP 429 — NÃO FOI POSSÍVEL TESTAR
 
